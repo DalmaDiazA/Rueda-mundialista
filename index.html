@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ruleta de la Suerte - Chipax</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        :root {
+            --chipax-green: #00BA8F;
+            --chipax-dark: #1a1a1a;
+            --chipax-light: #f5f5f5;
+            --chipax-yellow: #FDE68A;
+            --font-chipax: 'Inter', sans-serif;
+        }
+
+        body {
+            margin: 0; padding: 0;
+            font-family: var(--font-chipax);
+            background-color: var(--chipax-dark);
+            color: var(--chipax-light);
+            display: flex; flex-direction: column;
+            align-items: center; min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        header { margin-top: 20px; text-align: center; }
+        .logo { max-width: 160px; margin-bottom: 5px; }
+        h1 { font-size: 1.8rem; margin: 10px 0; }
+        
+        .container {
+            display: flex; flex-wrap: wrap; justify-content: center;
+            gap: 20px; margin: 15px 0; width: 100%; max-width: 1100px;
+        }
+
+        .wheel-box { display: flex; flex-direction: column; align-items: center; flex: 1; min-width: 320px; }
+        .wheel-title { font-size: 1.4rem; margin-bottom: 15px; color: var(--chipax-green); font-weight: 700; }
+
+        .canvas-container {
+            position: relative; border: 5px solid #333; border-radius: 50%;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5); background-color: white;
+            line-height: 0;
+        }
+
+        .arrow {
+            position: absolute; top: -12px; left: 50%; transform: translateX(-50%);
+            width: 0; height: 0; border-left: 12px solid transparent; border-right: 12px solid transparent;
+            border-top: 22px solid var(--chipax-yellow); z-index: 10;
+        }
+
+        canvas { border-radius: 50%; max-width: 100%; height: auto !important; transition: transform 4s cubic-bezier(0.15, 0, 0.15, 1); }
+
+        #spin-btn {
+            margin: 20px 0; padding: 15px 50px; font-size: 1.2rem; font-weight: 900;
+            text-transform: uppercase; background-color: var(--chipax-green); color: white;
+            border: none; border-radius: 50px; cursor: pointer; transition: transform 0.2s;
+        }
+        #spin-btn:hover { transform: scale(1.05); }
+        #spin-btn:disabled { background-color: #444; cursor: not-allowed; }
+
+        /* Overlay de Resultado */
+        #result-overlay {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.92); z-index: 1000;
+            flex-direction: column; justify-content: center; align-items: center;
+        }
+
+        .result-card {
+            background: white; color: var(--chipax-dark); padding: 35px;
+            border-radius: 24px; max-width: 450px; width: 85%;
+            border-bottom: 12px solid var(--chipax-green); text-align: center;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+        }
+
+        .profile-img {
+            width: 150px; height: 150px; border-radius: 50%; margin: 0 auto 15px;
+            border: 5px solid var(--chipax-green); background-size: cover; background-position: center;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 4rem; font-weight: bold; color: var(--chipax-green); background-color: #eee;
+            overflow: hidden;
+        }
+
+        .result-name { font-size: 2.5rem; margin: 5px 0; color: var(--chipax-green); font-weight: 900; }
+        .result-topic { font-size: 1.3rem; margin-top: 20px; color: #333; font-weight: 500; font-style: italic; line-height: 1.4; }
+        
+        #close-btn {
+            margin-top: 25px; padding: 12px 35px; font-weight: 700;
+            background: var(--chipax-dark); color: white; border: none; border-radius: 12px; cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <img src="Logo_principal_verde.png" alt="Chipax Logo" class="logo">
+    <h1>Dinámica de Equipo</h1>
+</header>
+
+<button id="spin-btn">¡Sortear!</button>
+
+<div class="container">
+    <div class="wheel-box">
+        <div class="wheel-title">Chipaxiano</div>
+        <div class="canvas-container">
+            <div class="arrow"></div>
+            <canvas id="wheel-people" width="500" height="500"></canvas>
+        </div>
+    </div>
+    <div class="wheel-box">
+        <div class="wheel-title">Tópico</div>
+        <div class="canvas-container">
+            <div class="arrow"></div>
+            <canvas id="wheel-topics" width="500" height="500"></canvas>
+        </div>
+    </div>
+</div>
+
+<div id="result-overlay">
+    <div class="result-card">
+        <div id="result-photo" class="profile-img"></div>
+        <p style="text-transform: uppercase; letter-spacing: 1px; font-weight: bold; color: #888; font-size: 0.8rem; margin: 0;">Le toca a:</p>
+        <h2 id="final-name" class="result-name">Nombre</h2>
+        <div id="final-topic" class="result-topic">Tópico aquí...</div>
+        <button id="close-btn">¡Genial!</button>
+    </div>
+</div>
+
+<script>
+    const chipaxianos = ["Ado", "Alexis", "Barbi", "Claudio", "Dal", "Dani", "Dibu", "Eric", "Francois", "Frano", "Graci", "Gracia", "Jake", "Javi", "Javi G", "JC", "Jesu", "Jhoa", "Juan Cruz", "Maripi", "Maripa", "Mirwing", "Nico", "Kiara", "Pablo", "PabloT", "Pipe", "Romi", "Sofi", "Tito", "Toni", "Turbo", "Yordana"];
+    
+    const topics = [
+        "Cuéntanos de tus horas de surf 🏄",
+        "¿Qué estás aprendiendo ahora? 🧠",
+        "Comparte pantalla y con fotos cuéntanos algo de ti 🔑",
+        "Comparte pantalla y abre tu Notion equipo 👀",
+        "Dato Random que nadie imagine",
+        "Tienes un minuto para contar una historia tuya divertida",
+        "Comparte una foto de tu comida favorita y convéncenos de que es la mejor.",
+        "¿Cómo celebraste tu último cumple?",
+        "Expectativa vs Realidad: Un proyecto/viaje",
+        "¿Qué lugar del mundo quieres conocer?"
+    ];
+
+    const colors = ['#00BA8F', '#14d4ac', '#B59DFB', '#FDE68A', '#BAE6FD', '#4ADE80', '#ffffff'];
+
+    function drawWheel(canvasId, items, isPeople = false) {
+        const canvas = document.getElementById(canvasId);
+        const ctx = canvas.getContext('2d');
+        const radius = canvas.width / 2;
+        const sliceAngle = (2 * Math.PI) / items.length;
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        items.forEach((item, i) => {
+            const angle = i * sliceAngle;
+            
+            ctx.beginPath();
+            ctx.fillStyle = colors[i % colors.length];
+            ctx.moveTo(radius, radius);
+            ctx.arc(radius, radius, radius, angle, angle + sliceAngle);
+            ctx.fill();
+            ctx.strokeStyle = "rgba(0,0,0,0.1)";
+            ctx.lineWidth = 1;
+            ctx.stroke();
+
+            ctx.save();
+            ctx.translate(radius, radius);
+            ctx.rotate(angle + sliceAngle / 2);
+            ctx.fillStyle = "#231f20";
+            
+            if (isPeople) {
+                ctx.textAlign = "right"; 
+                ctx.font = "bold 12px Inter";
+                ctx.fillText(item, radius - 20, 5);
+            } else {
+                ctx.textAlign = "left"; 
+                ctx.font = "bold 13px Inter";
+                
+                // --- LÓGICA DE ELIPSIS ---
+                const maxLen = 22; 
+                let text = item;
+                if (text.length > maxLen) {
+                    text = text.substring(0, maxLen).trim() + "...";
+                }
+                ctx.fillText(text, 60, 5); 
+            }
+            ctx.restore();
+        });
+    }
+
+    window.onload = () => {
+        drawWheel('wheel-people', chipaxianos, true);
+        drawWheel('wheel-topics', topics, false);
+    };
+
+    let rotP = 0;
+    let rotT = 0;
+    const btn = document.getElementById('spin-btn');
+
+    btn.addEventListener('click', () => {
+        btn.disabled = true;
+        rotP += 1800 + Math.random() * 2000;
+        rotT += 1800 + Math.random() * 2000;
+        
+        document.getElementById('wheel-people').style.transform = `rotate(${rotP}deg)`;
+        document.getElementById('wheel-topics').style.transform = `rotate(${rotT}deg)`;
+
+        setTimeout(() => {
+            const p = getWinner(rotP, chipaxianos);
+            const t = getWinner(rotT, topics);
+            showWinner(p, t);
+            btn.disabled = false;
+        }, 4000);
+    });
+
+    function getWinner(rot, list) {
+        const norm = (rot % 360);
+        const size = 360 / list.length;
+        const idx = Math.floor(((360 - norm + 270) % 360) / size);
+        return list[idx % list.length];
+    }
+
+    function showWinner(name, topic) {
+        document.getElementById('final-name').innerText = name;
+        document.getElementById('final-topic').innerText = `"${topic}"`;
+        
+        const photoDiv = document.getElementById('result-photo');
+        
+        // LIMPIEZA DE NOMBRE: Quita espacios para "Javi G" -> "javig"
+        const cleanName = name.toLowerCase().replace(/\s+/g, '');
+        const imgPath = `${cleanName}.jpeg`;
+        
+        photoDiv.innerText = "";
+        photoDiv.style.backgroundImage = "none";
+        
+        const img = new Image();
+        img.src = imgPath;
+        
+        img.onload = () => {
+            photoDiv.style.backgroundImage = `url('${imgPath}')`;
+        };
+        
+        img.onerror = () => {
+            // Intento secundario con nombre original en minúsculas
+            const imgAlt = new Image();
+            imgAlt.src = `${name.toLowerCase()}.jpeg`;
+            imgAlt.onload = () => {
+                photoDiv.style.backgroundImage = `url('${name.toLowerCase()}.jpeg')`;
+            };
+            imgAlt.onerror = () => {
+                // Si falla, pone la inicial
+                photoDiv.innerText = name.charAt(0);
+            };
+        };
+
+        document.getElementById('result-overlay').style.display = 'flex';
+        confetti({ 
+            particleCount: 150, 
+            spread: 70, 
+            origin: { y: 0.6 },
+            colors: ['#00BA8F', '#FDE68A', '#B59DFB']
+        });
+    }
+
+    document.getElementById('close-btn').addEventListener('click', () => {
+        document.getElementById('result-overlay').style.display = 'none';
+    });
+</script>
+
+</body>
+</html>
