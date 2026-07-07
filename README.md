@@ -1,6 +1,4 @@
-<img width="890" height="865" alt="image" src="https://github.com/user-attachments/assets/5caf4374-fa4b-425a-b1be-d1ec4853b19a" /># Rueda-mundialista
-
- Rompehielos interactivo para las reuniones de equipo de Chipax, con temática Mundial de Fútbol. Se sortea a un chipaxiano, elige una pelota que revela una posición de cancha (Arquero, Defensor, Mediocampista, Delantero o Entrenador), y esa persona nombra a un colega de cualquier equipo de Chipax que cumpla ese rol. La cancha se va llenando con foto + nombre hasta completar la alineación, y al terminar se abre una celebración a pantalla completa con video de fondo.
+Rompehielos interactivo para las reuniones de equipo de Chipax, con temática Mundial de Fútbol. Se sortea a un chipaxiano, elige una pelota que revela una posición de cancha (Arquero, Defensor, Mediocampista, Delantero o Entrenador), y esa persona nombra a un colega de cualquier equipo de Chipax que cumpla ese rol. La cancha se va llenando con foto + nombre hasta completar la alineación, y al terminar se abre una celebración a pantalla completa con video de fondo.
 
  Cómo se juega
 
